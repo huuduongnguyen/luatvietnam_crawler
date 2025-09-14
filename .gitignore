@@ -1,0 +1,22 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+all_traffic_law_pdfs/
+batch_files/
+final_downloads/
+downloads_batch_01_of_03_5421_to_8420_from_5421/
+.vscode/
+failed_downloads.json
+luatvietnam_complete_collection.xlsx
+luatvietnam_complete_backup_20250912_095329.xlsx
+luatvietnam_smart_backup_20250912_230502.xlsx
+luatvietnam_smart_backup_20250912_231952.xlsx
+download_progress.txt
+sample_failed_downloads_log.xlsx
+selenium_crawler.log
+smart_crawler.log
+turbo_progress.txt
+batch_crawler.py
+batch_crawler_new.py

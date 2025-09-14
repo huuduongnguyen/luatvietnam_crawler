@@ -1,0 +1,35 @@
+[
+  {
+    "timestamp": "2025-09-14T20:59:28.304600",
+    "title": "Nghị quyết 04/2014/NQ-HĐND của Hội đồng nhân dân Thành phố Hà Nội về việc đặt tên và điều chỉnh độ dài một số đường, phố trên địa bàn Thành phố Hà Nội",
+    "url": "https://luatvietnam.vn/giao-thong/nghi-quyet-04-2014-nq-hdnd-hoi-dong-nhan-dan-tp-ha-noi-88312-d2.html",
+    "pdf_url": "https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error": "Download from URL failed: 403 Client Error: Forbidden for url: https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error_type": "DOWNLOAD_FAILED",
+    "retry_count": 0,
+    "file_size_attempted": 0,
+    "step": "download_from_url"
+  },
+  {
+    "timestamp": "2025-09-14T20:59:33.234655",
+    "title": "Quyết định 22/2014/QĐ-UBND của Ủy ban nhân dân Thành phố Hồ Chí Minh về việc ban hành Quy định quản lý hoạt động vận tải hành khách du lịch đường thủy trên địa bàn Thành phố Hồ Chí Minh",
+    "url": "https://luatvietnam.vn/giao-thong/quyet-dinh-22-2014-qd-ubnd-uy-ban-nhan-dan-tp-hcm-87901-d2.html",
+    "pdf_url": "https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error": "Download from URL failed: 403 Client Error: Forbidden for url: https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error_type": "DOWNLOAD_FAILED",
+    "retry_count": 0,
+    "file_size_attempted": 0,
+    "step": "download_from_url"
+  },
+  {
+    "timestamp": "2025-09-14T20:59:38.044898",
+    "title": "Công văn 3841/UBND-QHXDGT của Ủy ban nhân dân Thành phố Hà Nội về việc tăng cường đảm bảo trật tự, an toàn giao thông trong thời gian thi tốt nghiệp phổ thông trung học, tuyển sinh Đại học, Cao đẳng và kỳ nghỉ hè năm 2014",
+    "url": "https://luatvietnam.vn/giao-thong/cong-van-3841-ubnd-qhxdgt-uy-ban-nhan-dan-tp-ha-noi-87284-d2.html",
+    "pdf_url": "https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error": "Download from URL failed: 403 Client Error: Forbidden for url: https://cms.luatvietnam.vn/uploaded/Others/2023/08/29/Profile_LuatVietnam_8.8.2023_2908150600.pdf",
+    "error_type": "DOWNLOAD_FAILED",
+    "retry_count": 0,
+    "file_size_attempted": 0,
+    "step": "download_from_url"
+  }
+]
