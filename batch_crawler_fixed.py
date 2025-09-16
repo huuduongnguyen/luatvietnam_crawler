@@ -285,10 +285,20 @@ class LuatVietnamBatchCrawler:
         """Categorize error type for easier analysis"""
         error_lower = error_message.lower()
         
-        if '404' in error_lower or 'page not found' in error_lower or 'not found' in error_lower:
-            return 'PAGE_NOT_FOUND'
+        # Check for content being updated first (most specific)
+        if 'content being updated' in error_lower or 'đang được cập nhật' in error_lower:
+            return 'CONTENT_UPDATING'
+        # Check for document URL extraction errors (specific to missing PDFs)
+        elif 'document url not found in page source' in error_lower:
+            return 'PDF_URL_EXTRACTION_ERROR'
+        elif 'login successful but no document content found' in error_lower:
+            return 'PDF_URL_EXTRACTION_ERROR'
+        # Check for article/guide pages
         elif 'article' in error_lower or 'guide page' in error_lower or 'reference page' in error_lower:
             return 'ARTICLE_PAGE'
+        # Check for 404 and general not found (less specific, comes after extraction errors)
+        elif '404' in error_lower or 'page not found' in error_lower:
+            return 'PAGE_NOT_FOUND'
         elif 'no downloadable content' in error_lower:
             return 'NO_CONTENT'
         elif 'login' in error_lower or 'authentication' in error_lower:
@@ -520,13 +530,22 @@ class LuatVietnamBatchCrawler:
                 print(f"   ❌ Page not found (404 error)")
                 return None, "Page not found (404 error)", None
             
-            # First, try to find document URLs directly from main content
-            found_url, file_type = self.extract_document_url_from_source(self.driver.page_source)
+            # Check for content being updated (nội dung đang được cập nhật)
+            # But first check if there are actual download links available
+            temp_url, temp_file_type = self.extract_document_url_from_source(self.driver.page_source)
             
-            # If we found a document URL directly, we're done
-            if found_url:
+            # Only mark as "content updating" if there are NO download links AND very specific updating message is present
+            # Be more restrictive to avoid false positives
+            if (temp_url is None and 
+                ("nội dung văn bản đang được cập nhật" in page_source or
+                 "nội dung đang được cập nhật" in page_source)):
+                print(f"   ⏳ Content being updated - document not ready yet")
+                return None, "Content being updated - document not available yet", None
+            
+            # If we found a document URL from the initial check, we're done
+            if temp_url:
                 print(f"   ✅ Document URL found (already logged in)")
-                return found_url, None, file_type
+                return temp_url, None, temp_file_type
             
             # Quick check for article pages to skip expensive tab searches
             if ("-article.html" in document_url.lower() or 
@@ -692,7 +711,26 @@ class LuatVietnamBatchCrawler:
             # Debug output for failed searches
             if not found_url:
                 print(f"   ⚠️ No URLs found matching any pattern")
-                error_msg = "Document URL not found in page source (no PDF or Word files)"
+                
+                # Provide more specific error message based on what we found
+                page_source_lower = self.driver.page_source.lower()
+                
+                # Check if there are tabs but no content
+                if ("tải về" in page_source_lower and 
+                    download_tab_found and 
+                    "nội dung văn bản đang được cập nhật" not in page_source_lower):
+                    error_msg = "Download tab found but no document URLs available"
+                # Check if this is likely an article/guide page
+                elif ("-article.html" in document_url.lower() or 
+                      "hướng dẫn" in document_title.lower() or
+                      "chính sách mới" in document_title.lower()):
+                    error_msg = "Article/guide page - no downloadable document expected"
+                # Check if login was attempted but still no content
+                elif login_triggered:
+                    error_msg = "Login successful but no document content found - may be unavailable"
+                else:
+                    error_msg = "Document URL not found in page source (no PDF or Word files)"
+                
                 print(f"   ❌ {error_msg}")
                 return None, error_msg, None
             
@@ -708,25 +746,49 @@ class LuatVietnamBatchCrawler:
             pass
     
     def extract_document_url_from_source(self, page_source):
-        """Extract document URL from page source"""
-        # More specific patterns to find actual document URLs (avoid account/login PDFs)
+        """Extract document URL from page source - enhanced to catch more patterns"""
+        # Enhanced patterns to find actual document URLs including static3.luatvietnam.vn
         patterns = [
-            # PDF patterns (priority) - look for actual document download links
+            # Priority patterns for static3.luatvietnam.vn (new domain found in testing)
+            r'https://static3\.luatvietnam\.vn/[^"\'<>\s]*\.pdf[^"\'<>\s]*',
+            r'https://static3\.luatvietnam\.vn/[^"\'<>\s]*\.docx?[^"\'<>\s]*',
+            r'https://static3\.luatvietnam\.vn/[^"\'<>\s]*\.zip[^"\'<>\s]*',
+            
+            # Original static.luatvietnam.vn patterns (enhanced to catch VIETLAWFILE structure)
+            r'https://static\.luatvietnam\.vn/tai-file-[^"\'\/]*[^"\']*\/uploaded\/VIETLAWFILE\/[^"\']*\.PDF',  # VIETLAWFILE structure
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*-\d+\.pdf',  # With ID suffix
             r'https://static\.luatvietnam\.vn/tai-file-vanban-[^"\']*\.pdf',  # Document specific
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*\.pdf(?!\?|\#)',  # Clean PDF URLs
             
-            # ZIP patterns (for compressed documents)
+            # ZIP patterns for both domains (enhanced for VIETLAWFILE)
+            r'https://static3\.luatvietnam\.vn/[^"\'<>\s]*\.zip[^"\'<>\s]*',
+            r'https://static\.luatvietnam\.vn/tai-file-[^"\'\/]*[^"\']*\/uploaded\/VIETLAWFILE\/[^"\']*\.ZIP',  # VIETLAWFILE ZIP
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*-\d+\.zip',  # With ID suffix
             r'https://static\.luatvietnam\.vn/tai-file-vanban-[^"\']*\.zip',  # Document specific
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*\.zip(?!\?|\#)',  # Clean ZIP URLs
             
-            # Word document patterns (fallback)  
+            # Word document patterns for both domains (enhanced for VIETLAWFILE)
+            r'https://static3\.luatvietnam\.vn/[^"\'<>\s]*\.docx?[^"\'<>\s]*',
+            r'https://static\.luatvietnam\.vn/tai-file-[^"\'\/]*[^"\']*\/uploaded\/VIETLAWFILE\/[^"\']*\.DOCX?',  # VIETLAWFILE Word
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*-\d+\.docx?',  # With ID suffix
             r'https://static\.luatvietnam\.vn/tai-file-vanban-[^"\']*\.docx?',  # Document specific
             r'https://static\.luatvietnam\.vn/tai-file-[^"\']*\.docx?(?!\?|\#)',  # Clean Word URLs
             
-            # Broader patterns as last resort
+            # Patterns to find URLs in href attributes
+            r'href=["\']([^"\']*static3\.luatvietnam\.vn[^"\']*\.(pdf|docx?|zip))["\']',
+            r'href=["\']([^"\']*static\.luatvietnam\.vn[^"\']*\.(pdf|docx?|zip))["\']',
+            
+            # CMS domain patterns (but exclude profile documents)
+            r'https://cms\.luatvietnam\.vn/[^"\'<>\s]*\.pdf[^"\'<>\s]*',
+            r'https://cms\.luatvietnam\.vn/[^"\'<>\s]*\.docx?[^"\'<>\s]*',
+            r'https://cms\.luatvietnam\.vn/[^"\'<>\s]*\.zip[^"\'<>\s]*',
+            
+            # Broader patterns as last resort for any luatvietnam.vn subdomain
+            r'https://[^"\'<>\s]*\.luatvietnam\.vn/[^"\'<>\s]*\.pdf[^"\'<>\s]*',
+            r'https://[^"\'<>\s]*\.luatvietnam\.vn/[^"\'<>\s]*\.docx?[^"\'<>\s]*',
+            r'https://[^"\'<>\s]*\.luatvietnam\.vn/[^"\'<>\s]*\.zip[^"\'<>\s]*',
+            
+            # Original broader patterns for static.luatvietnam.vn
             r'https://static\.luatvietnam\.vn/[^"\']*\.pdf',  # Any PDF URL
             r'https://static\.luatvietnam\.vn/[^"\']*\.zip',  # Any ZIP URL
             r'https://static\.luatvietnam\.vn/[^"\']*\.docx?',  # Any Word URL
@@ -740,7 +802,12 @@ class LuatVietnamBatchCrawler:
             matches = re.findall(pattern, page_source)
             if matches:
                 for match in matches:
-                    document_url = match
+                    # Handle both string matches and tuple matches from capturing groups
+                    if isinstance(match, tuple):
+                        # For href patterns that capture groups, get the URL part
+                        document_url = match[0]
+                    else:
+                        document_url = match
                     
                     # Clean up URL if it's from href pattern
                     if document_url.startswith('"') or document_url.startswith("'"):
@@ -748,15 +815,19 @@ class LuatVietnamBatchCrawler:
                     
                     all_found_urls.append(document_url)
                     
-                    # Skip known account/login/generic PDFs (very specific patterns only)
+                    # Enhanced skip patterns - be more specific to avoid skipping valid documents
                     skip_patterns = [
+                        'profile_luatvietnam',  # Skip the specific profile PDF we found in testing
+                        'Profile_LuatVietnam',  # Skip company profile documents (case-sensitive)
+                        '/uploaded/Others/',    # Skip general uploads folder that contains profiles
                         '/account/', '/login/', '/user/', '/profile/', '/tai-khoan/',
-                        '/user-guide/', '/terms/', '/privacy/', '/contact/'
+                        '/user-guide/', '/terms/', '/privacy/', '/contact/',
+                        'profile.pdf',  # Skip generic profile PDFs
                     ]
                     
                     should_skip = False
                     for skip_pattern in skip_patterns:
-                        if skip_pattern in document_url.lower():
+                        if skip_pattern.lower() in document_url.lower():
                             should_skip = True
                             break
                     
